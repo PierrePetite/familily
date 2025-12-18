@@ -88,7 +88,7 @@ fi
 if [ -d "$APP_DIR/.git" ]; then
     log_info "Updating existing installation..."
     cd $APP_DIR
-    sudo -u $APP_USER git pull origin main
+    su - $APP_USER -s /bin/bash -c "cd $APP_DIR && git pull origin main"
 else
     log_info "Cloning repository..."
     rm -rf $APP_DIR
@@ -100,15 +100,15 @@ cd $APP_DIR
 
 # Install npm dependencies
 log_info "Installing npm dependencies (this may take a few minutes)..."
-sudo -u $APP_USER npm ci --silent
+su - $APP_USER -s /bin/bash -c "cd $APP_DIR && npm ci --silent"
 
 # Generate Prisma client
 log_info "Generating Prisma client..."
-sudo -u $APP_USER npx prisma generate
+su - $APP_USER -s /bin/bash -c "cd $APP_DIR && npx prisma generate"
 
 # Build application
 log_info "Building application (this may take a few minutes)..."
-sudo -u $APP_USER npm run build
+su - $APP_USER -s /bin/bash -c "cd $APP_DIR && npm run build"
 
 # Create data directory
 mkdir -p $APP_DIR/data
@@ -129,7 +129,7 @@ chmod 600 $APP_DIR/.env.local
 
 # Initialize database
 log_info "Initializing database..."
-sudo -u $APP_USER npx prisma db push
+su - $APP_USER -s /bin/bash -c "cd $APP_DIR && npx prisma db push"
 
 # Create systemd service (Debian) or OpenRC service (Alpine)
 if [ "$OS" = "debian" ]; then
