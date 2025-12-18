@@ -29,6 +29,23 @@ log_success() { echo -e "${GREEN}[OK]${NC} $1"; }
 log_warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
 log_error() { echo -e "${RED}[ERROR]${NC} $1"; exit 1; }
 
+# Spinner for long-running tasks
+spinner() {
+    local pid=$1
+    local message=$2
+    local spin='⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'
+    local i=0
+
+    tput civis  # Hide cursor
+    while kill -0 $pid 2>/dev/null; do
+        printf "\r  ${CYAN}${spin:$i:1}${NC} $message"
+        i=$(( (i + 1) % ${#spin} ))
+        sleep 0.1
+    done
+    tput cnorm  # Show cursor
+    printf "\r"
+}
+
 # Banner
 clear
 echo -e "${BLUE}"
@@ -205,13 +222,19 @@ log_info "Checking for Debian 12 template..."
 TEMPLATE_PATH=$(pveam list $TEMPLATE_STORAGE 2>/dev/null | grep -o "${TEMPLATE}.*\.tar\.\(gz\|zst\)" | head -1 || true)
 
 if [ -z "$TEMPLATE_PATH" ]; then
-    log_info "Downloading Debian 12 template..."
-    pveam update
+    log_info "Downloading Debian 12 template (this may take a minute)..."
+    pveam update >/dev/null 2>&1
     TEMPLATE_FILE=$(pveam available --section system | grep "debian-12-standard" | awk '{print $2}' | head -1)
     if [ -z "$TEMPLATE_FILE" ]; then
         log_error "Could not find Debian 12 template."
     fi
-    pveam download $TEMPLATE_STORAGE $TEMPLATE_FILE
+    # Show download progress
+    pveam download $TEMPLATE_STORAGE $TEMPLATE_FILE 2>&1 | while read line; do
+        if [[ "$line" =~ ([0-9]+)% ]]; then
+            printf "\r  ⬇ Downloading: ${CYAN}%s${NC}  " "${BASH_REMATCH[0]}"
+        fi
+    done
+    echo ""
     TEMPLATE_PATH=$TEMPLATE_FILE
 fi
 log_success "Template ready: $TEMPLATE_PATH"
@@ -219,7 +242,8 @@ log_success "Template ready: $TEMPLATE_PATH"
 # ─────────────────────────────────────────────────────────────
 # Create Container
 # ─────────────────────────────────────────────────────────────
-log_info "Creating LXC container..."
+echo -ne "${BLUE}[INFO]${NC} Creating LXC container (allocating ${DISK_SIZE}GB disk)..."
+
 pct create $CTID ${TEMPLATE_STORAGE}:vztmpl/${TEMPLATE_PATH} \
     --hostname $CT_HOSTNAME \
     --memory $RAM \
@@ -229,9 +253,12 @@ pct create $CTID ${TEMPLATE_STORAGE}:vztmpl/${TEMPLATE_PATH} \
     --unprivileged 1 \
     --features nesting=1 \
     --onboot 1 \
-    --start 0
+    --start 0 &
 
-log_success "Container created"
+spinner $! "Creating LXC container (allocating ${DISK_SIZE}GB disk)..."
+wait $!
+
+log_success "Container created                                        "
 
 # ─────────────────────────────────────────────────────────────
 # Start & Configure
@@ -249,9 +276,27 @@ for i in {1..30}; do
     sleep 2
 done
 
-log_info "Installing Familily (this takes a few minutes)..."
-pct exec $CTID -- bash -c "apt-get update -qq && apt-get install -y -qq curl"
-pct exec $CTID -- bash -c "curl -fsSL https://raw.githubusercontent.com/PierrePetite/familily/main/scripts/install-lxc.sh | bash"
+log_info "Installing Familily..."
+echo -e "  ${YELLOW}This takes 3-5 minutes. Grab a coffee! ☕${NC}"
+echo ""
+
+# Step 1: Update & install curl
+pct exec $CTID -- bash -c "apt-get update -qq" &
+spinner $! "Updating package lists..."
+wait $!
+log_success "Package lists updated"
+
+pct exec $CTID -- bash -c "apt-get install -y -qq curl git" &
+spinner $! "Installing dependencies..."
+wait $!
+log_success "Dependencies installed"
+
+# Step 2: Run the install script with progress output
+pct exec $CTID -- bash -c "curl -fsSL https://raw.githubusercontent.com/PierrePetite/familily/main/scripts/install-lxc.sh | bash" 2>&1 | while read line; do
+    if [[ "$line" =~ ^\[.*\] ]]; then
+        echo "  $line"
+    fi
+done
 
 # Get container IP
 CONTAINER_IP=$(pct exec $CTID -- hostname -I | awk '{print $1}')
