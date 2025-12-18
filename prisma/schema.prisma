@@ -17,6 +17,7 @@ model Family {
   notificationDevices NotificationDevice[]
   calendarFeeds       CalendarFeed[]
   budgets             Budget[]
+  mealPlans           MealPlan[]
 }
 
 model FamilyMember {
@@ -49,6 +50,9 @@ model FamilyMember {
 
   // Finance relations
   expenses                  Expense[]
+
+  // Meal planning relations
+  createdMealPlans          MealPlan[]
 }
 
 model Event {
@@ -248,6 +252,39 @@ model Expense {
   budget      Budget    @relation(fields: [budgetId], references: [id], onDelete: Cascade)
   memberId    String?   // Who made the expense (optional)
   member      FamilyMember? @relation(fields: [memberId], references: [id], onDelete: SetNull)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// ============================================
+// Meal Planning Models
+// ============================================
+
+model MealPlan {
+  id          String    @id @default(cuid())
+  weekStart   DateTime  // Monday of the week
+  familyId    String
+  family      Family    @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  createdById String
+  createdBy   FamilyMember @relation(fields: [createdById], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  meals       Meal[]
+
+  @@unique([familyId, weekStart])
+}
+
+model Meal {
+  id          String    @id @default(cuid())
+  dayOfWeek   Int       // 0=Monday, 6=Sunday
+  mealType    String    // BREAKFAST, LUNCH, DINNER
+  title       String
+  description String?
+  recipeUrl   String?   // Link to recipe
+
+  planId      String
+  plan        MealPlan  @relation(fields: [planId], references: [id], onDelete: Cascade)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 }

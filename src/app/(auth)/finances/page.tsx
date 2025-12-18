@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Plus, Pencil, Trash2, Receipt, TrendingDown, TrendingUp, Wallet, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { Plus, Pencil, Trash2, Receipt, TrendingDown, TrendingUp, Wallet, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -21,6 +22,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { BudgetForm } from '@/components/finance/budget-form';
 import { ExpenseForm } from '@/components/finance/expense-form';
 import { formatCurrency } from '@/lib/utils';
@@ -71,6 +79,9 @@ function formatMonth(year: number, month: number): string {
 
 export default function FinancesPage() {
   const { t, language } = useTranslation();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [recentExpenses, setRecentExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
@@ -80,6 +91,9 @@ export default function FinancesPage() {
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth());
 
+  // Budget Filter State - aus URL oder "all"
+  const [filterBudgetId, setFilterBudgetId] = useState<string>('all');
+
   const [showBudgetDialog, setShowBudgetDialog] = useState(false);
   const [showExpenseDialog, setShowExpenseDialog] = useState(false);
   const [editingBudget, setEditingBudget] = useState<Budget | null>(null);
@@ -87,6 +101,14 @@ export default function FinancesPage() {
   const [selectedBudgetId, setSelectedBudgetId] = useState<string | undefined>();
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [deletingExpense, setDeletingExpense] = useState<Expense | null>(null);
+
+  // URL-Parameter für Budget-Filter lesen
+  useEffect(() => {
+    const budgetParam = searchParams.get('budget');
+    if (budgetParam) {
+      setFilterBudgetId(budgetParam);
+    }
+  }, [searchParams]);
 
   // Prüfe ob aktueller Monat ausgewählt ist
   const isCurrentMonth = selectedYear === now.getFullYear() && selectedMonth === now.getMonth();
@@ -104,9 +126,14 @@ export default function FinancesPage() {
     }
   };
 
-  const fetchExpenses = async (month?: string) => {
+  const fetchExpenses = async (month?: string, budgetId?: string) => {
     try {
-      const url = month ? `/api/expenses?month=${month}&limit=20` : '/api/expenses?limit=20';
+      const params = new URLSearchParams();
+      if (month) params.set('month', month);
+      if (budgetId && budgetId !== 'all') params.set('budgetId', budgetId);
+      params.set('limit', '50');
+
+      const url = `/api/expenses?${params.toString()}`;
       const response = await fetch(url);
       if (response.ok) {
         const data = await response.json();
@@ -117,17 +144,30 @@ export default function FinancesPage() {
     }
   };
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     const monthStr = formatMonth(selectedYear, selectedMonth);
-    await Promise.all([fetchBudgets(monthStr), fetchExpenses(monthStr)]);
+    await Promise.all([fetchBudgets(monthStr), fetchExpenses(monthStr, filterBudgetId)]);
     setLoading(false);
-  };
+  }, [selectedYear, selectedMonth, filterBudgetId]);
 
   useEffect(() => {
     loadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedYear, selectedMonth]);
+  }, [loadData]);
+
+  // Handler für Budget-Filter Änderung
+  const handleBudgetFilterChange = (budgetId: string) => {
+    setFilterBudgetId(budgetId);
+    // URL aktualisieren (ohne reload)
+    const params = new URLSearchParams(searchParams.toString());
+    if (budgetId === 'all') {
+      params.delete('budget');
+    } else {
+      params.set('budget', budgetId);
+    }
+    const newUrl = params.toString() ? `?${params.toString()}` : '/finances';
+    router.replace(newUrl, { scroll: false });
+  };
 
   // Navigation Monat
   const goToPreviousMonth = () => {
@@ -408,13 +448,43 @@ export default function FinancesPage() {
       </div>
 
       {/* Expenses of the month */}
-      {recentExpenses.length > 0 && (
+      {(recentExpenses.length > 0 || filterBudgetId !== 'all') && (
         <div>
-          <h2 className="text-lg font-semibold mb-4">
-            {isCurrentMonth
-              ? t('finances.expensesThisMonth')
-              : t('finances.expensesInMonth', { month: t(`finances.months.${MONTH_KEYS[selectedMonth]}`) })}
-          </h2>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+            <h2 className="text-lg font-semibold">
+              {isCurrentMonth
+                ? t('finances.expensesThisMonth')
+                : t('finances.expensesInMonth', { month: t(`finances.months.${MONTH_KEYS[selectedMonth]}`) })}
+            </h2>
+            {budgets.length > 0 && (
+              <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4 text-muted-foreground" />
+                <Select value={filterBudgetId} onValueChange={handleBudgetFilterChange}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder={t('finances.filterByBudget')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{t('common.all')} {t('finances.budgets')}</SelectItem>
+                    {budgets.map((budget) => (
+                      <SelectItem key={budget.id} value={budget.id}>
+                        {budget.icon} {budget.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {filterBudgetId !== 'all' && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleBudgetFilterChange('all')}
+                  >
+                    {t('common.back')}
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
+          {recentExpenses.length > 0 ? (
           <Card>
             <CardContent className="p-0">
               <div className="divide-y">
@@ -473,11 +543,28 @@ export default function FinancesPage() {
               </div>
             </CardContent>
           </Card>
+          ) : (
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center py-8">
+              <Receipt className="h-10 w-10 text-muted-foreground mb-3" />
+              <p className="text-muted-foreground">
+                {filterBudgetId !== 'all'
+                  ? t('finances.noExpensesForBudget')
+                  : isCurrentMonth
+                    ? t('finances.noExpenses')
+                    : t('finances.noExpensesInMonth', {
+                        month: t(`finances.months.${MONTH_KEYS[selectedMonth]}`),
+                        year: selectedYear,
+                      })}
+              </p>
+            </CardContent>
+          </Card>
+          )}
         </div>
       )}
 
-      {/* Empty expenses display */}
-      {recentExpenses.length === 0 && budgets.length > 0 && (
+      {/* Empty state when no filter and no expenses */}
+      {recentExpenses.length === 0 && budgets.length > 0 && filterBudgetId === 'all' && (
         <div>
           <h2 className="text-lg font-semibold mb-4">
             {isCurrentMonth

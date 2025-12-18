@@ -15,12 +15,14 @@ import {
   LogOut,
   CheckSquare,
   Wallet,
+  UtensilsCrossed,
 } from 'lucide-react';
 
 const navItems = [
   { href: '/dashboard', labelKey: 'nav.dashboard', icon: Home },
   { href: '/calendar', labelKey: 'nav.calendar', icon: Calendar },
   { href: '/todos', labelKey: 'nav.todos', icon: CheckSquare },
+  { href: '/meals', labelKey: 'nav.meals', icon: UtensilsCrossed },
   { href: '/finances', labelKey: 'nav.finances', icon: Wallet },
   { href: '/family', labelKey: 'nav.family', icon: Users },
   { href: '/settings', labelKey: 'nav.settings', icon: Settings },

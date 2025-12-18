@@ -6,6 +6,22 @@ A privacy-first family organization app for shared calendars, to-do lists, and b
 
 ---
 
+## Screenshots
+
+### Dashboard
+![Dashboard](screenshots/dashboard.png)
+
+### Calendar
+![Calendar](screenshots/calendar.png)
+
+### Meal Planning
+![Meal Planning](screenshots/mealplan.png)
+
+### Finances
+![Finances](screenshots/finances.png)
+
+---
+
 ## Features
 
 ### Calendar
@@ -30,6 +46,13 @@ A privacy-first family organization app for shared calendars, to-do lists, and b
 - **Visual Progress**: Progress bars showing budget utilization
 - **Dashboard Widget**: Quick budget overview on the main dashboard
 - **Historical View**: Browse expenses by month
+
+### Meal Planning
+- **Weekly View**: Plan meals for the entire week (Monday-Sunday)
+- **Three Meals Per Day**: Breakfast, lunch, and dinner slots
+- **Recipe Links**: Save URLs to your favorite recipes
+- **Today Highlight**: Current day is visually highlighted
+- **Easy Navigation**: Switch between weeks with simple controls
 
 ### Family Management
 - **Member Profiles**: Name, birthdate, color, and optional login credentials
@@ -194,6 +217,7 @@ familily/
 │   │   ├── calendar/          # Calendar components
 │   │   ├── todos/             # To-do components
 │   │   ├── finance/           # Budget components
+│   │   ├── meals/             # Meal planning components
 │   │   ├── family/            # Family components
 │   │   └── layout/            # Layout components
 │   │
@@ -268,7 +292,7 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ## Roadmap
 
 - [ ] CalDAV server integration
-- [ ] Meal planning module
+- [x] Meal planning module
 - [ ] Document storage
 - [ ] Email notifications (SMTP)
 - [ ] Mobile app (React Native)

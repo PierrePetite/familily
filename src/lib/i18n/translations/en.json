@@ -3,6 +3,7 @@
     "dashboard": "Dashboard",
     "calendar": "Calendar",
     "todos": "To-Do",
+    "meals": "Meals",
     "finances": "Finances",
     "family": "Family",
     "settings": "Settings",
@@ -114,6 +115,9 @@
     "addExpense": "Add expense",
     "moreBudgets": "+{count} more budgets",
     "total": "Total",
+    "filterByBudget": "Filter by budget",
+    "noExpensesForBudget": "No expenses for this budget",
+    "viewExpenses": "View expenses",
     "months": {
       "january": "January",
       "february": "February",
@@ -256,5 +260,37 @@
     "invalidEmail": "Please enter a valid email address",
     "invalidPassword": "Password must be at least 8 characters",
     "positiveNumber": "Must be a positive number"
+  },
+  "meals": {
+    "title": "Meal Plan",
+    "subtitle": "Plan your meals for the week",
+    "addMeal": "Add Meal",
+    "editMeal": "Edit Meal",
+    "deleteMeal": "Delete Meal?",
+    "deleteMealConfirm": "Do you really want to delete \"{title}\"?",
+    "day": "Day",
+    "mealType": "Meal",
+    "title_field": "Title",
+    "titlePlaceholder": "e.g. Spaghetti Bolognese",
+    "recipeUrl": "Recipe Link",
+    "recipe": "Recipe",
+    "notes": "Notes",
+    "notesPlaceholder": "Additional notes...",
+    "noMeals": "No meals planned yet",
+    "clickToAdd": "Click + to add a meal",
+    "mealTypes": {
+      "breakfast": "Breakfast",
+      "lunch": "Lunch",
+      "dinner": "Dinner"
+    },
+    "dayNames": {
+      "0": "Monday",
+      "1": "Tuesday",
+      "2": "Wednesday",
+      "3": "Thursday",
+      "4": "Friday",
+      "5": "Saturday",
+      "6": "Sunday"
+    }
   }
 }

@@ -3,6 +3,7 @@
     "dashboard": "Dashboard",
     "calendar": "Kalender",
     "todos": "To-Do",
+    "meals": "Mahlzeiten",
     "finances": "Finanzen",
     "family": "Familie",
     "settings": "Einstellungen",
@@ -114,6 +115,9 @@
     "addExpense": "Ausgabe hinzufügen",
     "moreBudgets": "+{count} weitere Budgets",
     "total": "Gesamt",
+    "filterByBudget": "Nach Budget filtern",
+    "noExpensesForBudget": "Keine Ausgaben für dieses Budget",
+    "viewExpenses": "Ausgaben anzeigen",
     "months": {
       "january": "Januar",
       "february": "Februar",
@@ -256,5 +260,37 @@
     "invalidEmail": "Bitte eine gültige E-Mail-Adresse eingeben",
     "invalidPassword": "Passwort muss mindestens 8 Zeichen haben",
     "positiveNumber": "Muss eine positive Zahl sein"
+  },
+  "meals": {
+    "title": "Mahlzeitenplan",
+    "subtitle": "Plane deine Mahlzeiten für die Woche",
+    "addMeal": "Mahlzeit hinzufügen",
+    "editMeal": "Mahlzeit bearbeiten",
+    "deleteMeal": "Mahlzeit löschen?",
+    "deleteMealConfirm": "Möchtest du \"{title}\" wirklich löschen?",
+    "day": "Tag",
+    "mealType": "Mahlzeit",
+    "title_field": "Titel",
+    "titlePlaceholder": "z.B. Spaghetti Bolognese",
+    "recipeUrl": "Rezept-Link",
+    "recipe": "Rezept",
+    "notes": "Notizen",
+    "notesPlaceholder": "Zusätzliche Notizen...",
+    "noMeals": "Noch keine Mahlzeiten geplant",
+    "clickToAdd": "Klicke auf +, um eine Mahlzeit hinzuzufügen",
+    "mealTypes": {
+      "breakfast": "Frühstück",
+      "lunch": "Mittagessen",
+      "dinner": "Abendessen"
+    },
+    "dayNames": {
+      "0": "Montag",
+      "1": "Dienstag",
+      "2": "Mittwoch",
+      "3": "Donnerstag",
+      "4": "Freitag",
+      "5": "Samstag",
+      "6": "Sonntag"
+    }
   }
 }
