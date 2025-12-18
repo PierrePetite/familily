@@ -140,19 +140,21 @@ PUSHOVER_APP_TOKEN="your-pushover-app-token"
 The easiest way to deploy on Proxmox. Run this **on your Proxmox host**:
 
 ```bash
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/PierrePetite/familily/main/scripts/create-lxc.sh)"
+curl -fsSL https://raw.githubusercontent.com/PierrePetite/familily/main/scripts/create-lxc.sh | bash
 ```
 
-This will:
+This interactive installer will:
+- Ask for container ID, hostname, and resources
+- Auto-detect available storages
 - Create a Debian 12 LXC container
 - Install Node.js and all dependencies
 - Build and configure Familily
-- Set up auto-start on boot
+- Set up systemd service with auto-start
 
 **Or install inside an existing LXC/VM:**
 
 ```bash
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/PierrePetite/familily/main/scripts/install-lxc.sh)"
+curl -fsSL https://raw.githubusercontent.com/PierrePetite/familily/main/scripts/install-lxc.sh | bash
 ```
 
 ### Docker
