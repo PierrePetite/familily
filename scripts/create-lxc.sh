@@ -6,6 +6,16 @@
 
 set -e
 
+# If running via pipe, download and re-run with proper TTY
+if [ ! -t 0 ]; then
+    SCRIPT_URL="https://raw.githubusercontent.com/PierrePetite/familily/main/scripts/create-lxc.sh"
+    TMP_SCRIPT=$(mktemp)
+    curl -fsSL "$SCRIPT_URL" -o "$TMP_SCRIPT"
+    chmod +x "$TMP_SCRIPT"
+    exec bash "$TMP_SCRIPT" "$@"
+    exit $?
+fi
+
 # Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -60,53 +70,27 @@ if ! command -v pct &> /dev/null; then
     log_error "This script must be run on a Proxmox host"
 fi
 
-# Function to display a selection menu
+# Function to display a selection menu (numbered list)
 select_option() {
     local prompt="$1"
     shift
     local options=("$@")
-    local selected=0
-    local key
+    local choice
 
-    # Hide cursor
-    tput civis
-
-    while true; do
-        # Move cursor up to redraw
-        if [ $selected -gt 0 ] || [ "${first_draw:-1}" -eq 0 ]; then
-            tput cuu $((${#options[@]} + 1))
-        fi
-        first_draw=0
-
-        echo -e "${BOLD}$prompt${NC}"
-        for i in "${!options[@]}"; do
-            if [ $i -eq $selected ]; then
-                echo -e "  ${CYAN}▸ ${options[$i]}${NC}"
-            else
-                echo -e "    ${options[$i]}"
-            fi
-        done
-
-        # Read single keypress
-        read -rsn1 key
-        case "$key" in
-            A) # Up arrow
-                ((selected--)) || true
-                [ $selected -lt 0 ] && selected=$((${#options[@]} - 1))
-                ;;
-            B) # Down arrow
-                ((selected++)) || true
-                [ $selected -ge ${#options[@]} ] && selected=0
-                ;;
-            "") # Enter
-                break
-                ;;
-        esac
+    echo -e "${BOLD}$prompt${NC}"
+    for i in "${!options[@]}"; do
+        echo -e "  ${CYAN}$((i+1)))${NC} ${options[$i]}"
     done
 
-    # Show cursor
-    tput cnorm
-    echo "$selected"
+    while true; do
+        echo -ne "${BOLD}Enter choice [1-${#options[@]}]:${NC} "
+        read choice
+        if [[ "$choice" =~ ^[0-9]+$ ]] && [ "$choice" -ge 1 ] && [ "$choice" -le "${#options[@]}" ]; then
+            echo "$((choice-1))"
+            return
+        fi
+        echo -e "${RED}Invalid choice. Please enter 1-${#options[@]}${NC}"
+    done
 }
 
 # Function to prompt for input with default
