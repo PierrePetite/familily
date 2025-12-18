@@ -71,7 +71,8 @@ if ! command -v pct &> /dev/null; then
 fi
 
 # Function to display a selection menu (numbered list)
-select_option() {
+# Returns selected index via global variable SELECTED_INDEX
+select_storage() {
     local prompt="$1"
     shift
     local options=("$@")
@@ -86,7 +87,7 @@ select_option() {
         echo -ne "${BOLD}Enter choice [1-${#options[@]}]:${NC} "
         read choice
         if [[ "$choice" =~ ^[0-9]+$ ]] && [ "$choice" -ge 1 ] && [ "$choice" -le "${#options[@]}" ]; then
-            echo "$((choice-1))"
+            SELECTED_INDEX=$((choice-1))
             return
         fi
         echo -e "${RED}Invalid choice. Please enter 1-${#options[@]}${NC}"
@@ -94,14 +95,14 @@ select_option() {
 }
 
 # Function to prompt for input with default
-prompt_input() {
+# Returns value via global variable INPUT_VALUE
+get_input() {
     local prompt="$1"
     local default="$2"
-    local result
 
     echo -ne "${BOLD}$prompt${NC} [${CYAN}$default${NC}]: "
-    read result
-    echo "${result:-$default}"
+    read INPUT_VALUE
+    INPUT_VALUE="${INPUT_VALUE:-$default}"
 }
 
 echo -e "${BOLD}Let's set up your Familily container!${NC}\n"
@@ -110,7 +111,8 @@ echo -e "${BOLD}Let's set up your Familily container!${NC}\n"
 # Step 1: Container ID
 # ─────────────────────────────────────────────────────────────
 NEXT_CTID=$(pvesh get /cluster/nextid)
-CTID=$(prompt_input "Container ID" "$NEXT_CTID")
+get_input "Container ID" "$NEXT_CTID"
+CTID="$INPUT_VALUE"
 
 # Check if CTID already exists
 if pct status $CTID &>/dev/null; then
@@ -120,7 +122,8 @@ fi
 # ─────────────────────────────────────────────────────────────
 # Step 2: Hostname
 # ─────────────────────────────────────────────────────────────
-CT_HOSTNAME=$(prompt_input "Hostname" "$CT_HOSTNAME")
+get_input "Hostname" "$CT_HOSTNAME"
+CT_HOSTNAME="$INPUT_VALUE"
 
 # ─────────────────────────────────────────────────────────────
 # Step 3: Template Storage (for vztmpl)
@@ -138,8 +141,8 @@ elif [ ${#TEMPLATE_STORAGES[@]} -eq 1 ]; then
     log_success "Template storage: $TEMPLATE_STORAGE"
 else
     echo ""
-    result=$(select_option "Select template storage:" "${TEMPLATE_STORAGES[@]}")
-    TEMPLATE_STORAGE="${TEMPLATE_STORAGES[$result]}"
+    select_storage "Select template storage:" "${TEMPLATE_STORAGES[@]}"
+    TEMPLATE_STORAGE="${TEMPLATE_STORAGES[$SELECTED_INDEX]}"
     echo ""
     log_success "Template storage: $TEMPLATE_STORAGE"
 fi
@@ -159,8 +162,8 @@ elif [ ${#DISK_STORAGES[@]} -eq 1 ]; then
     log_success "Disk storage: $STORAGE"
 else
     echo ""
-    result=$(select_option "Select disk storage:" "${DISK_STORAGES[@]}")
-    STORAGE="${DISK_STORAGES[$result]}"
+    select_storage "Select disk storage:" "${DISK_STORAGES[@]}"
+    STORAGE="${DISK_STORAGES[$SELECTED_INDEX]}"
     echo ""
     log_success "Disk storage: $STORAGE"
 fi
@@ -169,9 +172,12 @@ fi
 # Step 5: Resources
 # ─────────────────────────────────────────────────────────────
 echo ""
-DISK_SIZE=$(prompt_input "Disk size (GB)" "$DISK_SIZE")
-RAM=$(prompt_input "RAM (MB)" "$RAM")
-CORES=$(prompt_input "CPU cores" "$CORES")
+get_input "Disk size (GB)" "$DISK_SIZE"
+DISK_SIZE="$INPUT_VALUE"
+get_input "RAM (MB)" "$RAM"
+RAM="$INPUT_VALUE"
+get_input "CPU cores" "$CORES"
+CORES="$INPUT_VALUE"
 
 # ─────────────────────────────────────────────────────────────
 # Summary & Confirmation
