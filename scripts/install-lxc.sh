@@ -123,13 +123,13 @@ su - $APP_USER -s /bin/bash -c "cd $APP_DIR && npm ci --silent"
 log_info "Generating Prisma client..."
 su - $APP_USER -s /bin/bash -c "cd $APP_DIR && npx prisma generate"
 
-# Initialize database BEFORE build
+# Initialize database BEFORE build (pass DATABASE_URL explicitly)
 log_info "Initializing database..."
-su - $APP_USER -s /bin/bash -c "cd $APP_DIR && npx prisma db push"
+su - $APP_USER -s /bin/bash -c "cd $APP_DIR && DATABASE_URL='file:$APP_DIR/data/familily.db' npx prisma db push"
 
-# Build application
+# Build application (pass env vars for Next.js build)
 log_info "Building application (this may take a few minutes)..."
-su - $APP_USER -s /bin/bash -c "cd $APP_DIR && npm run build"
+su - $APP_USER -s /bin/bash -c "cd $APP_DIR && DATABASE_URL='file:$APP_DIR/data/familily.db' npm run build"
 
 # Create systemd service (Debian) or OpenRC service (Alpine)
 if [ "$OS" = "debian" ]; then
