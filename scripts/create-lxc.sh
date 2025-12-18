@@ -6,16 +6,6 @@
 
 set -e
 
-# If running via pipe, download and re-run with proper TTY
-if [ ! -t 0 ]; then
-    SCRIPT_URL="https://raw.githubusercontent.com/PierrePetite/familily/main/scripts/create-lxc.sh"
-    TMP_SCRIPT=$(mktemp)
-    curl -fsSL "$SCRIPT_URL" -o "$TMP_SCRIPT"
-    chmod +x "$TMP_SCRIPT"
-    exec bash "$TMP_SCRIPT" "$@"
-    exit $?
-fi
-
 # Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -57,7 +47,7 @@ spinner() {
 }
 
 # Banner
-clear
+echo ""
 echo -e "${BLUE}"
 echo "╔═══════════════════════════════════════════╗"
 echo "║     Familily - Proxmox LXC Creator        ║"
@@ -85,7 +75,7 @@ select_storage() {
 
     while true; do
         echo -ne "${BOLD}Enter choice [1-${#options[@]}]:${NC} "
-        read choice
+        read choice </dev/tty
         if [[ "$choice" =~ ^[0-9]+$ ]] && [ "$choice" -ge 1 ] && [ "$choice" -le "${#options[@]}" ]; then
             SELECTED_INDEX=$((choice-1))
             return
@@ -101,7 +91,7 @@ get_input() {
     local default="$2"
 
     echo -ne "${BOLD}$prompt${NC} [${CYAN}$default${NC}]: "
-    read INPUT_VALUE
+    read INPUT_VALUE </dev/tty
     INPUT_VALUE="${INPUT_VALUE:-$default}"
 }
 
@@ -197,7 +187,7 @@ echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━�
 echo ""
 
 echo -ne "${BOLD}Proceed with installation?${NC} [Y/n]: "
-read confirm
+read confirm </dev/tty
 if [[ "${confirm,,}" == "n" ]]; then
     echo "Installation cancelled."
     exit 0
