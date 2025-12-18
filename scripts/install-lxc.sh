@@ -98,18 +98,6 @@ fi
 
 cd $APP_DIR
 
-# Install npm dependencies
-log_info "Installing npm dependencies (this may take a few minutes)..."
-su - $APP_USER -s /bin/bash -c "cd $APP_DIR && npm ci --silent"
-
-# Generate Prisma client
-log_info "Generating Prisma client..."
-su - $APP_USER -s /bin/bash -c "cd $APP_DIR && npx prisma generate"
-
-# Build application
-log_info "Building application (this may take a few minutes)..."
-su - $APP_USER -s /bin/bash -c "cd $APP_DIR && npm run build"
-
 # Create data directory
 mkdir -p $APP_DIR/data
 chown $APP_USER:$APP_USER $APP_DIR/data
@@ -117,7 +105,7 @@ chown $APP_USER:$APP_USER $APP_DIR/data
 # Generate secrets
 NEXTAUTH_SECRET=$(openssl rand -base64 32)
 
-# Create environment file
+# Create environment file BEFORE build (Prisma needs DATABASE_URL)
 log_info "Creating environment file..."
 cat > $APP_DIR/.env.local << EOF
 DATABASE_URL="file:$APP_DIR/data/familily.db"
@@ -127,9 +115,21 @@ EOF
 chown $APP_USER:$APP_USER $APP_DIR/.env.local
 chmod 600 $APP_DIR/.env.local
 
-# Initialize database
+# Install npm dependencies
+log_info "Installing npm dependencies (this may take a few minutes)..."
+su - $APP_USER -s /bin/bash -c "cd $APP_DIR && npm ci --silent"
+
+# Generate Prisma client
+log_info "Generating Prisma client..."
+su - $APP_USER -s /bin/bash -c "cd $APP_DIR && npx prisma generate"
+
+# Initialize database BEFORE build
 log_info "Initializing database..."
 su - $APP_USER -s /bin/bash -c "cd $APP_DIR && npx prisma db push"
+
+# Build application
+log_info "Building application (this may take a few minutes)..."
+su - $APP_USER -s /bin/bash -c "cd $APP_DIR && npm run build"
 
 # Create systemd service (Debian) or OpenRC service (Alpine)
 if [ "$OS" = "debian" ]; then
