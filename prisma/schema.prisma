@@ -1,0 +1,253 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Family {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  members   FamilyMember[]
+  events    Event[]
+  todoLists TodoList[]
+  notificationDevices NotificationDevice[]
+  calendarFeeds       CalendarFeed[]
+  budgets             Budget[]
+}
+
+model FamilyMember {
+  id        String    @id @default(cuid())
+  name      String
+  email     String?   @unique
+  password  String?
+  birthdate DateTime?
+  color     String    @default("#3B82F6")
+  role      String    @default("MEMBER") // ADMIN, ADULT, CHILD, MEMBER
+  avatarUrl String?
+  familyId  String
+  family    Family    @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+
+  participatingIn EventParticipant[]
+  accompanyingIn  EventParticipant[] @relation("Accompanist")
+  createdEvents   Event[]
+
+  // Todo relations
+  createdTodoLists TodoList[]
+  visibleTodoLists TodoListMember[]
+  assignedTodos    TodoItem[] @relation("AssignedTodos")
+  completedTodos   TodoItem[] @relation("CompletedTodos")
+  createdTodos     TodoItem[] @relation("CreatedTodos")
+
+  // Notification relations
+  notificationSubscriptions NotificationSubscription[]
+  calendarFeeds             CalendarFeed[]
+
+  // Finance relations
+  expenses                  Expense[]
+}
+
+model Event {
+  id            String   @id @default(cuid())
+  title         String
+  description   String?
+  startTime     DateTime
+  endTime       DateTime?
+  allDay        Boolean  @default(false)
+  location      String?
+  latitude      Float?
+  longitude     Float?
+  travelTime    Int?
+  category      String   @default("OTHER") // DOCTOR, SCHOOL, SPORT, WORK, LEISURE, BIRTHDAY, HOLIDAY, OTHER
+  isRecurring   Boolean  @default(false)
+  parentEventId String?
+  parentEvent   Event?   @relation("RecurringEvents", fields: [parentEventId], references: [id])
+  childEvents   Event[]  @relation("RecurringEvents")
+  familyId      String
+  family        Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  createdById   String
+  createdBy     FamilyMember @relation(fields: [createdById], references: [id])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  participants EventParticipant[]
+  recurrence   Recurrence?
+  reminders    EventReminder[]
+}
+
+model EventParticipant {
+  id            String        @id @default(cuid())
+  eventId       String
+  event         Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  memberId      String
+  member        FamilyMember  @relation(fields: [memberId], references: [id])
+  isAccompanist Boolean       @default(false)
+  accompanistId String?
+  accompanist   FamilyMember? @relation("Accompanist", fields: [accompanistId], references: [id])
+
+  @@unique([eventId, memberId])
+}
+
+model Recurrence {
+  id         String    @id @default(cuid())
+  eventId    String    @unique
+  event      Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  frequency  String    // DAILY, WEEKLY, MONTHLY, YEARLY
+  interval   Int       @default(1)
+  daysOfWeek String?
+  dayOfMonth Int?
+  endDate    DateTime?
+  count      Int?
+}
+
+model TodoList {
+  id          String     @id @default(cuid())
+  name        String
+  description String?
+  icon        String     @default("📝") // Emoji icon
+  isShared    Boolean    @default(true) // true = visible to all, false = only to assigned members
+  familyId    String
+  family      Family     @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  createdById String
+  createdBy   FamilyMember @relation(fields: [createdById], references: [id])
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  items       TodoItem[]
+  visibleTo   TodoListMember[] // Members who can see this list (only used if isShared=false)
+}
+
+model TodoListMember {
+  id        String       @id @default(cuid())
+  listId    String
+  list      TodoList     @relation(fields: [listId], references: [id], onDelete: Cascade)
+  memberId  String
+  member    FamilyMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@unique([listId, memberId])
+}
+
+model TodoItem {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  completed   Boolean   @default(false)
+  completedAt DateTime?
+  dueDate     DateTime?
+  priority    String    @default("NORMAL") // LOW, NORMAL, HIGH
+  listId      String
+  list        TodoList  @relation(fields: [listId], references: [id], onDelete: Cascade)
+  assignedToId String?
+  assignedTo   FamilyMember? @relation("AssignedTodos", fields: [assignedToId], references: [id])
+  completedById String?
+  completedBy   FamilyMember? @relation("CompletedTodos", fields: [completedById], references: [id])
+  createdById  String
+  createdBy    FamilyMember @relation("CreatedTodos", fields: [createdById], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// ============================================
+// Notification & Calendar Feed Models
+// ============================================
+
+// Global app settings (Pushover App Token, etc.)
+model AppSettings {
+  id                 String   @id @default("default")
+  pushoverAppToken   String?
+  defaultReminderMin Int      @default(15) // Default reminder in minutes
+  externalUrl        String?  // External URL for remote access (e.g., Tailscale IP)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+// Notification devices (e.g., Pushover User Keys)
+model NotificationDevice {
+  id          String   @id @default(cuid())
+  name        String   // e.g., "Papa's iPhone", "Mama's Handy"
+  type        String   @default("PUSHOVER") // PUSHOVER, NTFY, EMAIL (future)
+  userKey     String   // Pushover User Key or other identifier
+  enabled     Boolean  @default(true)
+  familyId    String
+  family      Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Which members' notifications go to this device
+  subscribedMembers NotificationSubscription[]
+}
+
+// Links members to notification devices (who gets notified for whom)
+model NotificationSubscription {
+  id        String   @id @default(cuid())
+  deviceId  String
+  device    NotificationDevice @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  memberId  String
+  member    FamilyMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@unique([deviceId, memberId])
+}
+
+// Event reminders
+model EventReminder {
+  id            String    @id @default(cuid())
+  eventId       String
+  event         Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  minutesBefore Int       @default(15) // 15, 30, 60, 120, 1440 (1 day), etc.
+  sent          Boolean   @default(false)
+  sentAt        DateTime?
+  createdAt     DateTime  @default(now())
+
+  @@unique([eventId, minutesBefore])
+}
+
+// Calendar feed tokens for iCal export
+model CalendarFeed {
+  id        String   @id @default(cuid())
+  token     String   @unique @default(cuid()) // Secret URL token
+  name      String   // e.g., "Alle Termine", "Nur Max"
+  memberId  String?  // null = all family members
+  member    FamilyMember? @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  familyId  String
+  family    Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  enabled   Boolean  @default(true)
+  lastAccessed DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ============================================
+// Budget & Finance Models
+// ============================================
+
+model Budget {
+  id            String    @id @default(cuid())
+  name          String    // e.g., "Lebensmittel", "Freizeit"
+  icon          String    @default("💰") // Emoji
+  monthlyAmount Float     // Budget amount per month
+  resetDay      Int       @default(1) // Day of month when budget resets (1-31)
+  color         String    @default("#3b82f6")
+  showInDashboard Boolean @default(true) // Show in dashboard widget
+  familyId      String
+  family        Family    @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  expenses      Expense[]
+}
+
+model Expense {
+  id          String    @id @default(cuid())
+  amount      Float     // Expense amount
+  vendor      String    // e.g., "REWE", "Amazon"
+  description String?   // Optional details
+  date        DateTime  @default(now()) // Date of expense
+  budgetId    String
+  budget      Budget    @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+  memberId    String?   // Who made the expense (optional)
+  member      FamilyMember? @relation(fields: [memberId], references: [id], onDelete: SetNull)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
