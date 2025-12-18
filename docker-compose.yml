@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  familily:
+    build: .
+    container_name: familily
+    ports:
+      - "3000:3000"
+    volumes:
+      - familily-data:/app/data
+    environment:
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET:-change-me-to-a-secure-random-string}
+      - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3000}
+      - DATABASE_URL=file:/app/data/familily.db
+    restart: unless-stopped
+
+volumes:
+  familily-data:

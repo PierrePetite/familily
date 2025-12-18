@@ -135,7 +135,36 @@ PUSHOVER_APP_TOKEN="your-pushover-app-token"
 
 ## Production Deployment
 
-### Docker (Recommended)
+### Proxmox LXC (One-Line Install)
+
+The easiest way to deploy on Proxmox. Run this **on your Proxmox host**:
+
+```bash
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/PierrePetite/familily/main/scripts/create-lxc.sh)"
+```
+
+This will:
+- Create a Debian 12 LXC container
+- Install Node.js and all dependencies
+- Build and configure Familily
+- Set up auto-start on boot
+
+**Or install inside an existing LXC/VM:**
+
+```bash
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/PierrePetite/familily/main/scripts/install-lxc.sh)"
+```
+
+### Docker
+
+```bash
+# Clone and start with Docker Compose
+git clone https://github.com/PierrePetite/familily.git
+cd familily
+docker compose up -d
+```
+
+Or build manually:
 
 ```bash
 # Build the image
@@ -145,35 +174,28 @@ docker build -t familily .
 docker run -d \
   -p 3000:3000 \
   -v familily-data:/app/data \
-  -e NEXTAUTH_SECRET="your-secure-secret" \
-  -e NEXTAUTH_URL="https://your-domain.com" \
+  -e NEXTAUTH_SECRET="$(openssl rand -base64 32)" \
+  -e NEXTAUTH_URL="http://localhost:3000" \
   familily
-```
-
-### Docker Compose
-
-```yaml
-version: '3.8'
-services:
-  familily:
-    build: .
-    ports:
-      - "3000:3000"
-    volumes:
-      - familily-data:/app/data
-    environment:
-      - NEXTAUTH_SECRET=your-secure-secret
-      - NEXTAUTH_URL=https://your-domain.com
-    restart: unless-stopped
-
-volumes:
-  familily-data:
 ```
 
 ### Manual Deployment
 
 ```bash
-# Build for production
+# Clone repository
+git clone https://github.com/PierrePetite/familily.git
+cd familily
+
+# Install dependencies
+npm ci
+
+# Setup environment
+cp .env.example .env.local
+# Edit .env.local with your settings
+
+# Build and initialize
+npx prisma generate
+npx prisma db push
 npm run build
 
 # Start production server

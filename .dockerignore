@@ -1,0 +1,40 @@
+# Dependencies
+node_modules
+.pnp
+.pnp.js
+
+# Build
+.next
+out
+build
+
+# Debug
+npm-debug.log*
+
+# Local env files
+.env*.local
+.env
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Data
+data/
+*.db
+
+# Git
+.git
+.gitignore
+
+# Misc
+README.md
+CLAUDE.md
+screenshots/
+.claude/
