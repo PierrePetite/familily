@@ -20,6 +20,7 @@ DISK_SIZE="${DISK_SIZE:-4}"
 RAM="${RAM:-1024}"
 CORES="${CORES:-2}"
 STORAGE="${STORAGE:-local-lvm}"
+TEMPLATE_STORAGE="${TEMPLATE_STORAGE:-local}"
 TEMPLATE="debian-12-standard"
 APP_PORT=3000
 
@@ -46,13 +47,13 @@ if [ "$CTID" = "auto" ]; then
 fi
 
 # Check if template exists, download if not
-TEMPLATE_PATH=$(pveam list $STORAGE 2>/dev/null | grep -o "${TEMPLATE}.*\.tar\.\(gz\|zst\)" | head -1 || true)
+TEMPLATE_PATH=$(pveam list $TEMPLATE_STORAGE 2>/dev/null | grep -o "${TEMPLATE}.*\.tar\.\(gz\|zst\)" | head -1 || true)
 
 if [ -z "$TEMPLATE_PATH" ]; then
-    log_info "Downloading Debian 12 template..."
+    log_info "Downloading Debian 12 template to ${TEMPLATE_STORAGE}..."
     pveam update
     TEMPLATE_FILE=$(pveam available --section system | grep "debian-12-standard" | awk '{print $2}' | head -1)
-    pveam download $STORAGE $TEMPLATE_FILE
+    pveam download $TEMPLATE_STORAGE $TEMPLATE_FILE
     TEMPLATE_PATH=$TEMPLATE_FILE
 fi
 
@@ -60,7 +61,7 @@ log_info "Using template: $TEMPLATE_PATH"
 
 # Create LXC container
 log_info "Creating LXC container (CTID: $CTID)..."
-pct create $CTID ${STORAGE}:vztmpl/${TEMPLATE_PATH} \
+pct create $CTID ${TEMPLATE_STORAGE}:vztmpl/${TEMPLATE_PATH} \
     --hostname $HOSTNAME \
     --memory $RAM \
     --cores $CORES \
